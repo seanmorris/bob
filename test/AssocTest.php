@@ -123,6 +123,137 @@ class AssocTest extends \UnitTestCase
 		}
 	}
 
+	public function testRoundedNumeric()
+	{
+		foreach(range(-1, 1, 0.1) as $i)
+		{
+			$reference = range($i, $i+8);
+			$reference = array_map(
+				function($r)
+				{
+					return round($r, 1);
+				}
+				, $reference
+			);
+			$keys      = array_map([get_called_class(), 'stringKey'], $reference);
+			$reference = array_combine($keys, $reference);
+			$options   = ['round' => 1];
+			$blob      = \SeanMorris\Bob\Bank::encode($reference, $options);
+			
+			// dumpBytes($blob);
+
+			$sample    = \SeanMorris\Bob\Bank::decode($blob, $options);
+
+			$reference = array_map('strval', $reference);
+			$sample    = array_map('strval', $sample);
+
+			$this->assertEqual(
+				count(array_diff($reference, $sample))
+				, 0
+				, sprintf(
+					'Rounded Numeric Lists of length %d don\'t match.'
+					, $i
+				)
+			);
+		}
+
+		foreach(range(-1, 1, 0.01) as $i)
+		{
+			$reference = range($i, $i+8);
+			$reference = array_map(
+				function($r)
+				{
+					return round($r, 2);
+				}
+				, $reference
+			);
+			$keys      = array_map([get_called_class(), 'stringKey'], $reference);
+			$reference = array_combine($keys, $reference);
+			$options   = ['round' => 2];
+			$blob      = \SeanMorris\Bob\Bank::encode($reference, $options);
+			
+			// dumpBytes($blob);
+
+			$sample    = \SeanMorris\Bob\Bank::decode($blob, $options);
+
+			$reference = array_map('strval', $reference);
+			$sample    = array_map('strval', $sample);
+
+			$this->assertEqual(
+				count(array_diff($reference, $sample))
+				, 0
+				, sprintf(
+					'Rounded Numeric Lists of length %d don\'t match.'
+					, $i
+				)
+			);
+		}
+
+		foreach(range(-1, 1, 0.001) as $i)
+		{
+			$reference = range($i, $i+8);
+			$reference = array_map(
+				function($r)
+				{
+					return round($r, 3);
+				}
+				, $reference
+			);
+			$keys      = array_map([get_called_class(), 'stringKey'], $reference);
+			$reference = array_combine($keys, $reference);
+			$options   = ['round' => 3];
+			$blob      = \SeanMorris\Bob\Bank::encode($reference, $options);
+			
+			// dumpBytes($blob);
+
+			$sample    = \SeanMorris\Bob\Bank::decode($blob, $options);
+
+			$reference = array_map('strval', $reference);
+			$sample    = array_map('strval', $sample);
+
+			$this->assertEqual(
+				count(array_diff($reference, $sample))
+				, 0
+				, sprintf(
+					'Rounded Numeric Lists of length %d don\'t match.'
+					, $i
+				)
+			);
+		}
+
+		foreach(range(-1, 1, 0.0001) as $i)
+		{
+			$reference = range($i, $i+8);
+			$reference = array_map(
+				function($r)
+				{
+					return round($r, 4);
+				}
+				, $reference
+			);
+			$keys      = array_map([get_called_class(), 'stringKey'], $reference);
+			$reference = array_combine($keys, $reference);
+			$options   = ['round' => 4];
+			$blob      = \SeanMorris\Bob\Bank::encode($reference, $options);
+			
+			// dumpBytes($blob);
+
+			$sample    = \SeanMorris\Bob\Bank::decode($blob, $options);
+
+			$reference = array_map('strval', $reference);
+			$sample    = array_map('strval', $sample);
+
+			$this->assertEqual(
+				count(array_diff($reference, $sample))
+				, 0
+				, sprintf(
+					'Rounded Numeric Lists of length %d don\'t match.'
+					, $i
+				)
+			);
+		}
+	}
+
 	public function testStrings()
 	{
 		for($i = 36**3 - 36*2; $i < 36**3 + 36*2; $i++)

@@ -6,13 +6,16 @@ class Bank
 		, BYTE      = 0x01
 		, SHORT     = 0x02
 		, LONG      = 0x04
-		, FPOINT    = 0x04
+		, FPOINT    = 0x18
 		, TEXT      = 0x08
 		, LIST      = 0x10
 		, REFERENCE = 0x20
 
 		, UNSIGNED  = 0x40
 		, SIGNED    = 0x80
+
+		, FPSINGLE  = 0x40
+		, FPDOUBLE  = 0x80
 		
 		, SIMPLE    = 0x40
 		, COMPLEX   = 0x80
@@ -34,14 +37,14 @@ class Bank
 		}
 	}
 
-	public static function encode($value)
+	public static function encode($value, $options = [])
 	{
 		$static = new \SeanMorris\Bob\Bank($value);
 
-		return $static->encodeBank();
+		return $static->encodeBank($options);
 	}
 
-	public function encodeBank()
+	public function encodeBank($options)
 	{
 		$i = 0;
 		$blobs = [];
@@ -50,63 +53,63 @@ class Bank
 		{
 			$value = $this->bank[$i];
 
-			$blobs[] = static::encodeSingle($value);
+			$blobs[] = static::encodeSingle($value, $options);
 
 			$i++;
 		}
 
 		return implode(NULL, $blobs);
 	}
-	public function encodeSingle($value)
+	public function encodeSingle($value, $options)
 	{
-		switch(static::type($value))
+		switch(static::type($value, $options))
 		{
 			case chr(static::NULL):
-				return static::encodeNull($value);
+				return static::encodeNull($value, $options);
 				break;
 
 			case chr(static::BYTE | static::UNSIGNED):
-				return static::encodeUnsignedByte($value);
+				return static::encodeUnsignedByte($value, $options);
 				break;
 
 			case chr(static::SHORT | static::UNSIGNED):
-				return static::encodeUnsignedShort($value);
+				return static::encodeUnsignedShort($value, $options);
 				break;
 
 			case chr(static::LONG | static::UNSIGNED):
-				return static::encodeUnsignedLong($value);
+				return static::encodeUnsignedLong($value, $options);
 				break;
 
 			case chr(static::BYTE | static::SIGNED):
-				return static::encodeSignedByte($value);
+				return static::encodeSignedByte($value, $options);
 				break;
 
 			case chr(static::SHORT | static::SIGNED):
-				return static::encodeSignedShort($value);
+				return static::encodeSignedShort($value, $options);
 				break;
 
 			case chr(static::LONG | static::SIGNED):
-				return static::encodeSignedLong($value);
+				return static::encodeSignedLong($value, $options);
 				break;
 
 			case chr(static::FPOINT):
-				return static::encodeFloatingPoint($value);
+				return static::encodeFloatingPoint($value, $options);
 				break;
 
 			case chr(static::TEXT):
-				return static::encodeText($value);
+				return static::encodeText($value, $options);
 				break;
 
 			case chr(static::LIST | static::SIMPLE):
-				return static::encodeSimpleList($value);
+				return static::encodeSimpleList($value, $options);
 				break;
 
 			case chr(static::LIST | static::COMPLEX):
-				return static::encodeComplexList($value);
+				return static::encodeComplexList($value, $options);
 				break;
 
 			case chr(static::LIST | static::TYPED):
-				return static::encodeTypedList($value);
+				return static::encodeTypedList($value, $options);
 				break;
 
 			case chr(static::REFERENCE):
@@ -115,80 +118,96 @@ class Bank
 		}
 	}
 
-	protected function encodeNull($value)
+	protected function encodeNull($value, $options)
 	{
 		return chr(static::NULL);
 	}
 
-	protected function encodeUnsignedByte($value)
+	protected function encodeUnsignedByte($value, $options)
 	{
 		return chr(static::BYTE | static::UNSIGNED)
 			. pack('C', $value);
 	}
 
-	protected function encodeUnsignedShort($value)
+	protected function encodeUnsignedShort($value, $options)
 	{
 		return chr(static::SHORT | static::UNSIGNED)
 			. pack('S', $value);
 	}
 
-	protected function encodeUnsignedLong($value)
+	protected function encodeUnsignedLong($value, $options)
 	{
 		return chr(static::LONG | static::UNSIGNED)
 			. pack('N', $value);
 	}
 
-	protected function encodeSignedByte($value)
+	protected function encodeSignedByte($value, $options)
 	{
 		return chr(static::BYTE | static::SIGNED)
 			. pack('c', $value);
 	}
 
-	protected function encodeSignedShort($value)
+	protected function encodeSignedShort($value, $options)
 	{
 		return chr(static::SHORT | static::SIGNED)
 			. pack('s', $value);
 	}
 
-	protected function encodeSignedLong($value)
+	protected function encodeSignedLong($value, $options)
 	{
 		return chr(static::LONG | static::SIGNED)
 			. pack('l', $value);
 	}
 
-	protected function encodeFloatingPoint($value)
+	protected function encodeFloatingPoint($value, $options)
 	{
-		return chr(static::FPOINT)
-			. pack('e', $value);
+		$reference = $value;
+		$encoded   = pack('g', $value);
+		$decoded   = unpack('g', pack('g', $value))[1];
+
+		if($options['round'] ?? FALSE)
+		{
+			$reference = round($reference, $options['round']);
+			$decoded   = round($decoded,   $options['round']);
+		}
+
+		if($reference === $decoded)
+		{
+			return chr(static::FPOINT | static::FPSINGLE)
+				. pack('g', $reference);
+		}
+
+		return chr(static::FPOINT | static::FPDOUBLE)
+			. pack('e', $reference);
 	}
 
-	protected function encodeText($value)
+	protected function encodeText($value, $options)
 	{
 		return chr(static::TEXT)
 			. pack('a*', $value)
 			. chr(0x00);
 	}
 
-	protected function encodeSimpleList($value)
+	protected function encodeSimpleList($value, $options)
 	{
 		return chr(static::LIST | static::SIMPLE)
-			. static::encodeList($value);
+			. static::encodeList($value, $options);
 	}
 
-	protected function encodeComplexList($value)
+	protected function encodeComplexList($value, $options)
 	{
 		return chr(static::LIST | static::COMPLEX)
-			. static::encodeList($value);
+			. static::encodeList($value, $options);
 	}
 
-	protected function encodeTypedList($value)
+	protected function encodeTypedList($value, $options)
 	{
 		return chr(static::LIST | static::TYPED)
-			. static::encodeText(get_class($value))
-			. static::encodeList($value);
+			. static::encodeText(get_class($value), $options)
+			. static::encodeList($value, $options);
 	}
 
-	protected function encodeReference($value)
+	protected function encodeReference($value, $options)
 	{
 		$pointer = count($this->bank);
 
@@ -212,7 +231,7 @@ class Bank
 			. pack('N', $pointer);
 	}
 
-	protected function encodeList($value)
+	protected function encodeList($value, $options)
 	{
 		$content = '';
 
@@ -220,33 +239,22 @@ class Bank
 		{
 			if(static::isntNumeric($i) || is_object($value))
 			{
-				$content .= static::encodeSingle($i);
+				$content .= static::encodeSingle($i, $options);
 			}
 
 			if(!is_scalar($v))
 			{
-				$content .= $this->encodeReference($v);
+				$content .= $this->encodeReference($v, $options);
 				continue;
 			}
 
-			$content .= static::encodeSingle($v);
+			$content .= static::encodeSingle($v, $options);
 		}
 
 		return $content . chr(0x00);
 	}
 
-	protected function types(...$args)
-	{
-		return array_map(
-			function($arg)
-			{
-				return static::type($arg);
-			}
-			, $args
-		);
-	}
-
-	protected function type($value)
+	protected function type($value, $options)
 	{
 		switch(TRUE)
 		{
@@ -280,7 +288,7 @@ class Bank
 
 		switch(TRUE)
 		{
-			case $value >= 2**32:
+			case $value >= 2**32 || is_float($value):
 				return chr(static::FPOINT);
 				break;
 
@@ -321,47 +329,68 @@ class Bank
 		return !is_numeric($value);
 	}
 
-	protected function decodeNull($value)
+	protected function decodeNull($value, $options)
 	{
 		return [NULL, 1];
 	}
 
-	protected function decodeUnsignedByte($value)
+	protected function decodeUnsignedByte($value, $options)
 	{
 		return [unpack('C', $value)[1], 1];
 	}
 
-	protected function decodeUnsignedShort($value)
+	protected function decodeUnsignedShort($value, $options)
 	{
 		return [unpack('S', $value)[1], 2];
 	}
 
-	protected function decodeUnsignedLong($value)
+	protected function decodeUnsignedLong($value, $options)
 	{
 		return [unpack('N', $value)[1], 4];
 	}
 
-	protected function decodeSignedByte($value)
+	protected function decodeSignedByte($value, $options)
 	{
 		return [unpack('c', $value)[1], 1];
 	}
 
-	protected function decodeSignedShort($value)
+	protected function decodeSignedShort($value, $options)
 	{
 		return [unpack('s', $value)[1], 2];
 	}
 
-	protected function decodeSignedLong($value)
+	protected function decodeSignedLong($value, $options)
 	{
 		return [unpack('l', $value)[1], 4];
 	}
 
-	protected function decodeFloatingPoint($value)
+	protected function decodeFloatingPointSingle($value, $options)
 	{
-		return [unpack('e', $value)[1], 8];
+		$decoded = unpack('g', $value)[1];
+
+		if($options['round'] ?? FALSE)
+		{
+			$decoded = round($decoded, $options['round']);
+		}
+
+		return [$decoded, 4];
 	}
 
-	protected function decodeText($blob)
+	protected function decodeFloatingPointDouble($value, $options)
+	{
+		return [unpack('e', $value)[1], 8];
+
+		// $decoded = unpack('e', $value)[1];
+
+		// if($options['round'] ?? FALSE)
+		// {
+		// 	$decoded = round($decoded, $options['round']);
+		// }
+
+		// return [$decoded, 4];
+	}
+
+	protected function decodeText($blob, $options)
 	{
 		$bytes = '';
 
@@ -380,12 +409,12 @@ class Bank
 		return [$text, strlen($text)];
 	}
 
-	protected function decodeReference($value)
+	protected function decodeReference($value, $options)
 	{
 		return [unpack('N', $value)[1], 4];
 	}
 
-	protected function decodeSimpleList($blob)
+	protected function decodeSimpleList($blob, $options)
 	{
 		$length = 0;
 		$bank   = [];
@@ -401,14 +430,14 @@ class Bank
 				break;
 
 				case chr(static::NULL):
-					list($bank[], $length) = static::decodeNull($byte);
+					list($bank[], $length) = static::decodeNull($byte, $options);
 					$i ++;
 				break;
 
 				case chr(static::BYTE | static::UNSIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($bank[], $length) = static::decodeUnsignedByte($bytes);
+					list($bank[], $length) = static::decodeUnsignedByte($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -416,7 +445,7 @@ class Bank
 				case chr(static::SHORT | static::UNSIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($bank[], $length) = static::decodeUnsignedShort($bytes);
+					list($bank[], $length) = static::decodeUnsignedShort($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -424,7 +453,7 @@ class Bank
 				case chr(static::LONG | static::UNSIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($bank[], $length) = static::decodeUnsignedLong($bytes);
+					list($bank[], $length) = static::decodeUnsignedLong($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -432,7 +461,7 @@ class Bank
 				case chr(static::BYTE | static::SIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($bank[], $length) = static::decodeSignedByte($bytes);
+					list($bank[], $length) = static::decodeSignedByte($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -440,7 +469,7 @@ class Bank
 				case chr(static::SHORT | static::SIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($bank[], $length) = static::decodeSignedShort($bytes);
+					list($bank[], $length) = static::decodeSignedShort($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -448,15 +477,23 @@ class Bank
 				case chr(static::LONG | static::SIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($bank[], $length) = static::decodeSignedLong($bytes);
+					list($bank[], $length) = static::decodeSignedLong($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
 
-				case chr(static::FPOINT):
+				case chr(static::FPOINT | static::FPSINGLE):
 					$bytes = substr($blob, $i+1);
 					
-					list($bank[], $length) = static::decodeFloatingPoint($bytes);
+					list($bank[], $length) = static::decodeFloatingPointSingle($bytes, $options);
+					$i += $length;
+					$i ++;
+					break;
+
+				case chr(static::FPOINT | static::FPDOUBLE):
+					$bytes = substr($blob, $i+1);
+					
+					list($bank[], $length) = static::decodeFloatingPointDouble($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -464,7 +501,7 @@ class Bank
 				case chr(static::TEXT):
 					$bytes = substr($blob, $i+1);
 
-					list($bank[], $length) = static::decodeText($bytes);
+					list($bank[], $length) = static::decodeText($bytes, $options);
 					$i += $length;
 					$i ++;
 					$i ++;
@@ -473,7 +510,7 @@ class Bank
 				case chr(static::REFERENCE):
 					$bytes = substr($blob, $i+1);
 
-					list($pointer, $length) = static::decodeReference($bytes);
+					list($pointer, $length) = static::decodeReference($bytes, $options);
 
 					$bank[] = $pointer;
 
@@ -501,9 +538,9 @@ class Bank
 		return [$bank, $i];
 	}
 
-	protected function decodeComplexList($blob)
+	protected function decodeComplexList($blob, $options)
 	{
-		[$list, $length] = static::decodeSimpleList($blob);
+		[$list, $length] = static::decodeSimpleList($blob, $options);
 
 		$keys = array_filter(
 			$list
@@ -524,15 +561,15 @@ class Bank
 		return [array_combine($keys, $values), $length];
 	}
 
-	protected function decodeTypedList($blob)
+	protected function decodeTypedList($blob, $options)
 	{
 		$typeBlob = substr($blob, 1);
 
-		[$type, $typeLength] = static::decodeText($typeBlob);
+		[$type, $typeLength] = static::decodeText($typeBlob, $options);
 
 		$listBlob = substr($blob, $typeLength + 2);
 
-		[$list, $listLength] = static::decodeComplexList($listBlob);
+		[$list, $listLength] = static::decodeComplexList($listBlob, $options);
 
 		$object = new $type;
 
@@ -544,7 +581,7 @@ class Bank
 		return [$object, $typeLength + $listLength + 3];
 	}
 
-	public function decodeBlob($blob)
+	public function decodeBlob($blob, $options)
 	{
 		$this->bank = [];
 
@@ -555,14 +592,14 @@ class Bank
 			switch($byte)
 			{
 				case chr(static::NULL):
-					list($this->bank[], $length) = static::decodeNull($byte);
+					list($this->bank[], $length) = static::decodeNull($byte, $options);
 					$i ++;
 					break;
 
 				case chr(static::BYTE | static::UNSIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($this->bank[], $length) = static::decodeUnsignedByte($bytes);
+					list($this->bank[], $length) = static::decodeUnsignedByte($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -570,7 +607,7 @@ class Bank
 				case chr(static::SHORT | static::UNSIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($this->bank[], $length) = static::decodeUnsignedShort($bytes);
+					list($this->bank[], $length) = static::decodeUnsignedShort($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -578,7 +615,7 @@ class Bank
 				case chr(static::LONG | static::UNSIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($this->bank[], $length) = static::decodeUnsignedLong($bytes);
+					list($this->bank[], $length) = static::decodeUnsignedLong($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -586,7 +623,7 @@ class Bank
 				case chr(static::BYTE | static::SIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($this->bank[], $length) = static::decodeSignedByte($bytes);
+					list($this->bank[], $length) = static::decodeSignedByte($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -594,7 +631,7 @@ class Bank
 				case chr(static::SHORT | static::SIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($this->bank[], $length) = static::decodeSignedShort($bytes);
+					list($this->bank[], $length) = static::decodeSignedShort($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -602,15 +639,23 @@ class Bank
 				case chr(static::LONG | static::SIGNED):
 					$bytes = substr($blob, $i+1);
 					
-					list($this->bank[], $length) = static::decodeSignedLong($bytes);
+					list($this->bank[], $length) = static::decodeSignedLong($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
 
-				case chr(static::FPOINT):
+				case chr(static::FPOINT | static::FPSINGLE):
 					$bytes = substr($blob, $i+1);
 					
-					list($this->bank[], $length) = static::decodeFloatingPoint($bytes);
+					list($this->bank[], $length) = static::decodeFloatingPointSingle($bytes, $options);
+					$i += $length;
+					$i ++;
+					break;
+
+				case chr(static::FPOINT | static::FPDOUBLE):
+					$bytes = substr($blob, $i+1);
+					
+					list($this->bank[], $length) = static::decodeFloatingPointDouble($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -618,7 +663,7 @@ class Bank
 				case chr(static::TEXT):
 					$bytes = substr($blob, $i+1);
 
-					list($this->bank[], $length) = static::decodeText($bytes);
+					list($this->bank[], $length) = static::decodeText($bytes, $options);
 					$i += $length;
 					$i ++;
 					$i ++;
@@ -627,7 +672,7 @@ class Bank
 				case chr(static::LIST | static::SIMPLE):
 					$bytes = substr($blob, $i+1);
 
-					list($this->bank[], $length) = static::decodeSimpleList($bytes);
+					list($this->bank[], $length) = static::decodeSimpleList($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -635,7 +680,7 @@ class Bank
 				case chr(static::LIST | static::COMPLEX):
 					$bytes = substr($blob, $i+1);
 
-					list($this->bank[], $length) = static::decodeComplexList($bytes);
+					list($this->bank[], $length) = static::decodeComplexList($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -643,7 +688,7 @@ class Bank
 				case chr(static::LIST | static::TYPED):
 					$bytes = substr($blob, $i+1);
 
-					list($this->bank[], $length) = static::decodeTypedList($bytes);
+					list($this->bank[], $length) = static::decodeTypedList($bytes, $options);
 					$i += $length;
 					$i ++;
 					break;
@@ -661,10 +706,10 @@ class Bank
 		return $this->bank[0];
 	}
 
-	public static function decode($blob)
+	public static function decode($blob, $options = [])
 	{
 		$static = new static();
 
-		return $static->decodeBlob($blob);
+		return $static->decodeBlob($blob, $options);
 	}
 }
