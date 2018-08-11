@@ -1,0 +1,19 @@
+{
+    "name": "seanmorris/bob",
+    "description": "Binary Object Bank - Serialize objects to binary while maintaing types",
+    "authors": [
+        {
+            "name": "Sean Morris",
+            "email": "inquire@seanmorr.is"
+        }
+    ],
+    "require-dev": {
+        "simpletest/simpletest": "^1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "SeanMorris\\Bob\\Test\\": "test/",
+            "SeanMorris\\Bob\\":       "source/"
+        }
+    }
+}
