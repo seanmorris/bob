@@ -570,7 +570,7 @@ class Bank
 
 		$listBlob = substr($blob, $typeLength + 2);
 
-		[$list, $listLength] = static::decodeComplexList($listBlob, $options);
+		list($list, $listLength) = static::decodeComplexList($listBlob, $options);
 
 		$object = new $type;
 
