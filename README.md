@@ -21,3 +21,24 @@ $blob = \SeanMorris\Bob\Bank::encode($someValue);
 
 $someValue = \SeanMorris\Bob\Bank::decode($blob);
 ```
+
+Run Tests:
+
+```BASH
+$ php runTests.php
+SeanMorris\Bob\Test\TextTest
+OK
+Test cases run: 1/1, Passes: 45396, Failures: 0, Exceptions: 0
+SeanMorris\Bob\Test\NumberTest
+OK
+Test cases run: 1/1, Passes: 27344, Failures: 0, Exceptions: 0
+SeanMorris\Bob\Test\ListTest
+OK
+Test cases run: 1/1, Passes: 27488, Failures: 0, Exceptions: 0
+SeanMorris\Bob\Test\AssocTest
+OK
+Test cases run: 1/1, Passes: 27488, Failures: 0, Exceptions: 0
+SeanMorris\Bob\Test\ObjectTest
+OK
+Test cases run: 1/1, Passes: 512, Failures: 0, Exceptions: 0
+```
