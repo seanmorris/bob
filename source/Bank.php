@@ -22,10 +22,12 @@ class Bank
 		, TYPED     = 0xC0
 	;
 
-	protected $bank = [], $stack = [], $blob;
+	protected $bank = [], $stack = [], $blob, $hashes = [];
 
 	public function __construct($value = NULL)
 	{
+		ini_set('memory_limit',       '4G');
+		ini_set('max_execution_time', '-1');
 		$this->bank($value);
 	}
 
@@ -210,21 +212,33 @@ class Bank
 
 	protected function encodeReference($value, $options)
 	{
-		$pointer = count($this->bank);
-
-		$found = false;
-
-		foreach($this->bank as $i => $object)
+		if(!is_object($value))
 		{
-			if($object === $value)
+			$pointer = count($this->bank);
+
+			$found = false;
+
+			foreach($this->bank as $i => $object)
 			{
-				$pointer = $i;
-				$found = true;
+				if($object === $value)
+				{
+					$pointer = $i;
+					$found = true;
+				}
 			}
+
+			$this->bank[] = $value;
+			return;			
 		}
 
-		if(!$found)
+		if(array_key_exists(spl_object_hash($value), $this->hashes))
 		{
+			$pointer = $this->hashes[$i];
+		}
+		else
+		{
+			$pointer = count($this->bank);
+			$this->hashes[spl_object_hash($value)] = $pointer;
 			$this->bank[] = $value;
 		}
 
