@@ -12,9 +12,9 @@ class AssocTest extends \UnitTestCase
 			$reference = array_combine($keys, $reference);
 
 			$blob      = \SeanMorris\Bob\Bank::encode($reference);
-			
+
 			// dumpBytes($blob);
-			
+
 			$sample    = \SeanMorris\Bob\Bank::decode($blob);
 
 
@@ -38,7 +38,7 @@ class AssocTest extends \UnitTestCase
 
 			$reference = array_combine($keys, $reference);
 			$blob      = \SeanMorris\Bob\Bank::encode($reference);
-			
+
 			// dumpBytes($blob);
 
 			$sample    = \SeanMorris\Bob\Bank::decode($blob);
@@ -60,7 +60,7 @@ class AssocTest extends \UnitTestCase
 
 			$reference = array_combine($keys, $reference);
 			$blob      = \SeanMorris\Bob\Bank::encode($reference);
-			
+
 			// dumpBytes($blob);
 
 			$sample    = \SeanMorris\Bob\Bank::decode($blob);
@@ -85,7 +85,7 @@ class AssocTest extends \UnitTestCase
 
 			$reference = array_combine($keys, $reference);
 			$blob      = \SeanMorris\Bob\Bank::encode($reference);
-			
+
 			// dumpBytes($blob);
 
 			$sample    = \SeanMorris\Bob\Bank::decode($blob);
@@ -107,7 +107,7 @@ class AssocTest extends \UnitTestCase
 
 			$reference = array_combine($keys, $reference);
 			$blob      = \SeanMorris\Bob\Bank::encode($reference);
-			
+
 			// dumpBytes($blob);
 
 			$sample    = \SeanMorris\Bob\Bank::decode($blob);
@@ -139,7 +139,7 @@ class AssocTest extends \UnitTestCase
 			$reference = array_combine($keys, $reference);
 			$options   = ['round' => 1];
 			$blob      = \SeanMorris\Bob\Bank::encode($reference, $options);
-			
+
 			// dumpBytes($blob);
 
 			$sample    = \SeanMorris\Bob\Bank::decode($blob, $options);
@@ -171,7 +171,7 @@ class AssocTest extends \UnitTestCase
 			$reference = array_combine($keys, $reference);
 			$options   = ['round' => 2];
 			$blob      = \SeanMorris\Bob\Bank::encode($reference, $options);
-			
+
 			// dumpBytes($blob);
 
 			$sample    = \SeanMorris\Bob\Bank::decode($blob, $options);
@@ -203,7 +203,7 @@ class AssocTest extends \UnitTestCase
 			$reference = array_combine($keys, $reference);
 			$options   = ['round' => 3];
 			$blob      = \SeanMorris\Bob\Bank::encode($reference, $options);
-			
+
 			// dumpBytes($blob);
 
 			$sample    = \SeanMorris\Bob\Bank::decode($blob, $options);
@@ -235,7 +235,7 @@ class AssocTest extends \UnitTestCase
 			$reference = array_combine($keys, $reference);
 			$options   = ['round' => 4];
 			$blob      = \SeanMorris\Bob\Bank::encode($reference, $options);
-			
+
 			// dumpBytes($blob);
 
 			$sample    = \SeanMorris\Bob\Bank::decode($blob, $options);
@@ -274,9 +274,6 @@ class AssocTest extends \UnitTestCase
 			);
 
 			$blob      = \SeanMorris\Bob\Bank::encode($reference);
-			
-			// dumpBytes($blob);
-
 			$sample    = \SeanMorris\Bob\Bank::decode($blob);
 
 			$this->assertEqual(
@@ -292,8 +289,8 @@ class AssocTest extends \UnitTestCase
 
 	function stringKey($string)
 	{
-		return base_convert($string,10,36)
-			. '!'
-			. base_convert($string,10,36);
+		$b36 = sha1($string);
+
+		return '!'. $b36;
 	}
 }
