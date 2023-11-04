@@ -8,9 +8,9 @@ class Bank
 		, LONG      = 0x04
 		, FPOINT    = 0x18
 		, TEXT      = 0x08
+
 		, LIST      = 0x10
 		, REFERENCE = 0x20
-
 		, UNSIGNED  = 0x40
 		, SIGNED    = 0x80
 
@@ -210,8 +210,7 @@ class Bank
 	protected function encodeReference($value, $options)
 	{
 		$pointer = count($this->bank);
-
-		$found = false;
+		$found   = false;
 
 		foreach($this->bank as $i => $object)
 		{
@@ -227,8 +226,14 @@ class Bank
 			$this->bank[] = $value;
 		}
 
-		return chr(static::REFERENCE)
-			. pack('N', $pointer);
+		$type    = static::type($pointer, $options);
+		$refType = chr(ord($type) - 0x20);
+
+		$encoded = static::encodeSingle($pointer, $options);
+
+		$encoded[0] = $refType;
+
+		return $encoded;
 	}
 
 	protected function encodeList($value, $options)
@@ -414,6 +419,21 @@ class Bank
 		return [unpack('N', $value)[1], 4];
 	}
 
+	protected function decodeReferenceByte($value, $options)
+	{
+		return [unpack('C', $value)[1], 1];
+	}
+
+	protected function decodeReferenceShort($value, $options)
+	{
+		return [unpack('S', $value)[1], 2];
+	}
+
+	protected function decodeReferenceLong($value, $options)
+	{
+		return [unpack('N', $value)[1], 4];
+	}
+
 	protected function decodeSimpleList($blob, $options)
 	{
 		$length = 0;
@@ -511,6 +531,74 @@ class Bank
 					$bytes = substr($blob, $i+1);
 
 					list($pointer, $length) = static::decodeReference($bytes, $options);
+
+					$bank[] = $pointer;
+
+					$slot =& $bank[ count($bank) - 1 ];
+
+					$stacker = function(&$slot) use($pointer) {
+						return function() use(&$slot, $pointer) {
+							$slot = $this->bank[$pointer];
+						};
+					};
+
+					$this->stack[] = $stacker($slot);
+
+					$slot = $pointer;
+
+					$i += $length;
+					$i ++;
+					break;
+
+				case chr(static::REFERENCE | static::BYTE):
+					$bytes = substr($blob, $i+1);
+
+					list($pointer, $length) = static::decodeReferenceByte($bytes, $options);
+
+					$bank[] = $pointer;
+
+					$slot =& $bank[ count($bank) - 1 ];
+
+					$stacker = function(&$slot) use($pointer) {
+						return function() use(&$slot, $pointer) {
+							$slot = $this->bank[$pointer];
+						};
+					};
+
+					$this->stack[] = $stacker($slot);
+
+					$slot = $pointer;
+
+					$i += $length;
+					$i ++;
+					break;
+				case chr(static::REFERENCE | static::SHORT):
+					$bytes = substr($blob, $i+1);
+
+					list($pointer, $length) = static::decodeReferenceShort($bytes, $options);
+
+					$bank[] = $pointer;
+
+					$slot =& $bank[ count($bank) - 1 ];
+
+					$stacker = function(&$slot) use($pointer) {
+						return function() use(&$slot, $pointer) {
+							$slot = $this->bank[$pointer];
+						};
+					};
+
+					$this->stack[] = $stacker($slot);
+
+					$slot = $pointer;
+
+					$i += $length;
+					$i ++;
+					break;
+
+				case chr(static::REFERENCE | static::LONG):
+					$bytes = substr($blob, $i+1);
+
+					list($pointer, $length) = static::decodeReferenceLong($bytes, $options);
 
 					$bank[] = $pointer;
 

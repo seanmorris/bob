@@ -1,5 +1,6 @@
 {
     "name": "seanmorris/bob",
+    "version": "0.0.0",
     "description": "Binary Object Bank - Serialize objects to binary while maintaing types",
     "authors": [
         {
@@ -13,7 +14,7 @@
     "autoload": {
         "psr-4": {
             "SeanMorris\\Bob\\Test\\": "test/",
-            "SeanMorris\\Bob\\":       "source/"
+            "SeanMorris\\Bob\\": "source/"
         }
     }
 }
